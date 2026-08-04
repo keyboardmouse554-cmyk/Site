@@ -3,182 +3,503 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Crypto Support — 24/7 Help for Your Crypto Journey</title>
-  <meta name="description" content="Expert help with wallets, exchanges, transactions and security. Real humans, real answers, around the clock.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <title>thecrypto.support — 24/7 human crypto help. We never ask for your seed phrase.</title>
+  <meta name="description" content="Wallets, exchanges, stuck transactions, security scares — talk to a real specialist, 24/7. Non-custodial help: we never ask for your seed phrase.">
+  <link rel="canonical" href="https://thecrypto.support/">
+  <meta name="theme-color" content="#05070f">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://thecrypto.support/">
+  <meta property="og:title" content="thecrypto.support — 24/7 human crypto help">
+  <meta property="og:description" content="Real specialists for wallets, exchanges and security scares. You keep your keys — we never ask for your seed phrase.">
+  <meta property="og:image" content="https://thecrypto.support/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="thecrypto.support — 24/7 human crypto help">
+  <meta name="twitter:description" content="Real specialists for wallets, exchanges and security scares. You keep your keys — we never ask for your seed phrase.">
+  <meta name="twitter:image" content="https://thecrypto.support/og.png">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+
+  <script>
+    // enhanced experience only where module import maps exist (Safari 16.4+,
+    // modern Chrome/Firefox/Edge); everyone else gets the full static page
+    if (HTMLScriptElement.supports && HTMLScriptElement.supports("importmap")) {
+      document.documentElement.classList.add("js");
+    }
+  </script>
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/jsm/" } }
+  </script>
+
+  <link rel="preload" href="fonts/space-grotesk-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/jetbrains-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="modulepreload" href="vendor/three.module.min.js">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛟</text></svg>">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Do you ever need my seed phrase or private keys?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No — never, under any circumstances. We guide you while you stay in control. Treat any request for your seed phrase, from anyone, as a scam." } },
+      { "@type": "Question", "name": "Can you recover funds I lost to a scam?",
+        "acceptedAnswer": { "@type": "Answer", "text": "On-chain transfers are usually irreversible, and anyone guaranteeing recovery is misleading you. We help you secure what's left, document everything, and report to the right channels." } },
+      { "@type": "Question", "name": "How much does it cost?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Flat prices quoted up front before we start, and a free 10-minute triage first. We never charge a percentage of your funds." } },
+      { "@type": "Question", "name": "How do I pay?",
+        "acceptedAnswer": { "@type": "Answer", "text": "By card, after the session, against a price you agreed to up front. We never ask you to send cryptocurrency as payment, and we never take a percentage of your funds." } },
+      { "@type": "Question", "name": "Which wallets and exchanges do you cover?",
+        "acceptedAnswer": { "@type": "Answer", "text": "All the major hardware and software wallets, and every large exchange. If you're on something niche, ask — odds are we've seen it." } },
+      { "@type": "Question", "name": "How do sessions happen?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Email, Telegram, phone or screen-share video — your choice. You'll never be asked to hand over remote control of your device." } }
+    ]
+  }
+  </script>
 </head>
 <body>
+
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Preloader -->
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader__inner">
+      <svg class="loader__mark" width="44" height="44" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M16 2.5 28 11.5 16 29.5 4 11.5Z"/><path d="M4 11.5h24M16 2.5l-5.5 9L16 29.5l5.5-18-5.5-9"/>
+      </svg>
+      <span class="loader__pct" id="loaderPct">00</span>
+    </div>
+  </div>
 
   <!-- 3D background canvas (fixed, whole page) -->
   <canvas id="bg3d" aria-hidden="true"></canvas>
   <div class="vignette" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
 
   <!-- ============ NAV ============ -->
   <header class="nav" id="nav">
-    <a class="nav__logo" href="#top">
-      <span class="nav__logo-mark">◈</span>
+    <a class="nav__logo" href="#top" aria-label="thecrypto.support — home">
+      <svg class="nav__mark" width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="url(#markGrad)" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true">
+        <defs>
+          <linearGradient id="markGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#29e0ff"/><stop offset="1" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+        <path d="M16 2.5 28 11.5 16 29.5 4 11.5Z"/><path d="M4 11.5h24M16 2.5l-5.5 9L16 29.5l5.5-18-5.5-9"/>
+      </svg>
       <span>thecrypto<b>.support</b></span>
     </a>
-    <nav class="nav__links">
+    <nav class="nav__links" id="navLinks" aria-label="Main">
       <a href="#services">Services</a>
       <a href="#how">How it works</a>
-      <a href="#stats">Why us</a>
+      <a href="#safety">Safety</a>
+      <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <a href="#contact" class="btn btn--small">Get help now</a>
+    <div class="nav__actions">
+      <a href="#contact" class="btn btn--small" data-magnetic>Talk to a specialist</a>
+      <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open menu">
+        <span></span><span></span>
+      </button>
+    </div>
   </header>
 
-  <main id="top">
+  <!-- Mobile menu -->
+  <div class="mmenu" id="mobileMenu" hidden>
+    <nav class="mmenu__links" aria-label="Mobile">
+      <a href="#services">Services</a>
+      <a href="#how">How it works</a>
+      <a href="#safety">Safety</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contact" class="mmenu__cta">Talk to a specialist</a>
+    </nav>
+    <p class="mmenu__note">We never ask for your seed phrase.</p>
+  </div>
+
+  <main id="main">
 
     <!-- ============ HERO ============ -->
-    <section class="hero" data-scene="hero">
-      <p class="hero__eyebrow reveal">24/7 human support · No bots, no runaround</p>
-      <h1 class="hero__title reveal">
-        Crypto is complicated.<br>
-        <span class="grad">Getting help shouldn't be.</span>
-      </h1>
-      <p class="hero__sub reveal">
-        Wallets, exchanges, stuck transactions, security scares — talk to a real
-        specialist who's seen it all and walks you through it, step by step.
-      </p>
-      <div class="hero__cta reveal">
-        <a href="#contact" class="btn btn--primary">Talk to a specialist</a>
-        <a href="#services" class="btn btn--ghost">Explore services</a>
+    <section class="hero" id="top">
+      <div class="hero__content">
+        <p class="hero__eyebrow mono reveal" data-scramble>24/7 human support — no bots, no runaround</p>
+        <h1 class="hero__title">
+          <span class="line"><span class="line__inner">Crypto is complicated.</span></span>
+          <span class="line"><span class="line__inner">Getting help <em class="grad">shouldn&rsquo;t&nbsp;be.</em></span></span>
+        </h1>
+        <p class="hero__sub reveal">
+          Wallets, exchanges, stuck transactions, security scares&nbsp;— talk to a real
+          specialist who walks you through it step by step, while you stay in full
+          control of your keys and accounts.
+        </p>
+        <div class="hero__cta reveal">
+          <a href="#contact" class="btn btn--primary" data-magnetic>Talk to a specialist</a>
+          <a href="#services" class="btn btn--ghost" data-magnetic>Explore services</a>
+        </div>
+        <div class="hero__pledge reveal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l7 3v5c0 4.5-3 8.6-7 10-4-1.4-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4.5"/>
+          </svg>
+          <span>
+            Non-custodial help&nbsp;— we <b>never</b> ask for your seed phrase
+            <small><span>Free 10-minute triage</span><span class="sep" aria-hidden="true">·</span><span>No account needed</span></small>
+          </span>
+        </div>
       </div>
-      <div class="hero__scroll reveal" aria-hidden="true">
-        <span></span>
+    </section>
+
+    <!-- ============ MARQUEE ============ -->
+    <section class="marquee-wrap" aria-label="Wallets and exchanges we support">
+      <p class="marquee__label mono">Tools we help with daily</p>
+      <div class="marquee" data-marquee>
+        <div class="marquee__track">
+          <span>MetaMask</span><span>Ledger</span><span>Trezor</span><span>Phantom</span>
+          <span>Trust&nbsp;Wallet</span><span>Coinbase</span><span>Kraken</span><span>Binance</span>
+          <span>Bitcoin</span><span>Ethereum</span><span>Solana</span><span>USDT</span>
+        </div>
+        <div class="marquee__track" aria-hidden="true">
+          <span>MetaMask</span><span>Ledger</span><span>Trezor</span><span>Phantom</span>
+          <span>Trust&nbsp;Wallet</span><span>Coinbase</span><span>Kraken</span><span>Binance</span>
+          <span>Bitcoin</span><span>Ethereum</span><span>Solana</span><span>USDT</span>
+        </div>
       </div>
+      <p class="marquee__legal">Independent support service. Not affiliated with or endorsed by any wallet, exchange or blockchain listed.</p>
     </section>
 
     <!-- ============ SERVICES ============ -->
     <section class="section" id="services">
       <div class="section__head reveal">
-        <p class="section__eyebrow">What we help with</p>
-        <h2>Support for every corner<br>of your <span class="grad">crypto life</span></h2>
+        <p class="eyebrow mono" data-scramble>What we help with</p>
+        <h2>Support for every corner of your crypto life</h2>
       </div>
       <div class="cards">
-        <article class="card tilt reveal">
-          <div class="card__icon">👛</div>
+        <article class="card card--wide tilt reveal">
+          <div class="card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7H6a2 2 0 0 1 0-4h12v4"/><path d="M19 7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H7a3 3 0 0 1-3-3V5"/><circle cx="16.5" cy="13.5" r="1.1"/></svg>
+          </div>
           <h3>Wallet setup &amp; troubleshooting</h3>
-          <p>Hardware or software, hot or cold — we help you set up, back up and understand your wallet so your keys stay yours.</p>
+          <p>Hardware or software, hot or cold&nbsp;— we help you set up, back up and truly understand your wallet, so your keys stay yours. Includes recovery-phrase hygiene and safe-storage walkthroughs.</p>
         </article>
         <article class="card tilt reveal">
-          <div class="card__icon">🔁</div>
+          <div class="card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13"/><path d="m14 4 3 3-3 3"/><path d="M20 17H7"/><path d="m10 14-3 3 3 3"/></svg>
+          </div>
           <h3>Transactions &amp; transfers</h3>
-          <p>Stuck, pending, or sent-to-the-wrong-network transactions demystified. Know what happened and what your options are.</p>
+          <p>Stuck, pending, or sent-to-the-wrong-network transactions demystified&nbsp;— what happened, and what your options are.</p>
         </article>
         <article class="card tilt reveal">
-          <div class="card__icon">🛡️</div>
+          <div class="card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.6-7 10-4-1.4-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4.5"/></svg>
+          </div>
           <h3>Security checkups</h3>
-          <p>Phishing scares, suspicious approvals, compromised devices — get a calm, practical review and a lockdown plan.</p>
+          <p>Phishing scares, suspicious approvals, compromised devices&nbsp;— a calm, practical review and a lockdown plan.</p>
         </article>
         <article class="card tilt reveal">
-          <div class="card__icon">🏦</div>
+          <div class="card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 9.5V19M9.7 9.5V19M14.3 9.5V19M19 9.5V19"/><path d="M3 19h18"/></svg>
+          </div>
           <h3>Exchange guidance</h3>
-          <p>KYC hurdles, withdrawal limits, account settings — navigate the big exchanges without the support-ticket black hole.</p>
+          <p>KYC hurdles, withdrawal limits, account settings&nbsp;— navigate the big exchanges without the ticket black hole.</p>
         </article>
         <article class="card tilt reveal">
-          <div class="card__icon">🎓</div>
+          <div class="card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>
+          </div>
           <h3>1-on-1 onboarding</h3>
-          <p>New to crypto? Private sessions that take you from zero to confident — at your pace, in plain language.</p>
+          <p>New to crypto? Private sessions that take you from zero to confident&nbsp;— at your pace, in plain language.</p>
         </article>
-        <article class="card tilt reveal">
-          <div class="card__icon">🧾</div>
+        <article class="card card--wide tilt reveal">
+          <div class="card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9.5 8h5M9.5 12h5"/></svg>
+          </div>
           <h3>Records &amp; tax prep</h3>
-          <p>Export histories, label transactions and get your books in a shape your accountant will actually thank you for.</p>
+          <p>Export histories, label transactions and get your books in a shape your accountant will thank you for&nbsp;— before tax season makes it urgent.</p>
         </article>
+        <a class="card card--mini tilt reveal" href="#contact">
+          <h3>Something else?</h3>
+          <p>If it&rsquo;s crypto, ask&nbsp;— the first 10 minutes are free.</p>
+          <span class="card__arrow" aria-hidden="true">&rarr;</span>
+        </a>
       </div>
     </section>
 
     <!-- ============ HOW IT WORKS ============ -->
     <section class="section" id="how">
       <div class="section__head reveal">
-        <p class="section__eyebrow">How it works</p>
-        <h2>Three steps to <span class="grad">sorted</span></h2>
+        <p class="eyebrow mono" data-scramble>How it works</p>
+        <h2>Three steps to sorted</h2>
       </div>
       <ol class="steps">
         <li class="step reveal">
-          <span class="step__num">01</span>
-          <h3>Tell us what's up</h3>
+          <span class="step__num mono">01</span>
+          <h3>Tell us what&rsquo;s up</h3>
           <p>Describe the issue in your own words. Screenshots welcome, jargon optional.</p>
         </li>
         <li class="step reveal">
-          <span class="step__num">02</span>
+          <span class="step__num mono">02</span>
           <h3>Get matched fast</h3>
-          <p>We route you to a specialist for your exact wallet, chain or exchange — usually in minutes.</p>
+          <p>We route you to a specialist for your exact wallet, chain or exchange&nbsp;— usually in minutes.</p>
         </li>
         <li class="step reveal">
-          <span class="step__num">03</span>
+          <span class="step__num mono">03</span>
           <h3>Fix it together</h3>
-          <p>Live guided session until it's resolved. You keep control of your keys and accounts at all times.</p>
+          <p>A live guided session until it&rsquo;s resolved. You press every button&nbsp;— we never touch your funds.</p>
         </li>
       </ol>
-      <p class="note reveal">🔐 We will <b>never</b> ask for your seed phrase or private keys. Anyone who does is scamming you.</p>
+    </section>
+
+    <!-- ============ SAFETY PLEDGE ============ -->
+    <section class="section" id="safety">
+      <div class="statement reveal">
+        <p class="eyebrow mono" data-scramble>The pledge</p>
+        <h2 class="statement__title">We will <span class="grad">never</span> ask for your seed&nbsp;phrase.</h2>
+        <p class="statement__sub">…and three more lines we refuse to cross&nbsp;— in writing.</p>
+      </div>
+      <div class="pledge reveal">
+        <ul class="pledge__list">
+          <li class="reveal">
+            <span class="pledge__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            <div><h3>Never your secrets</h3><p>Not your recovery phrase, private keys, or 2FA codes. Not once, not ever, not &ldquo;just to check&rdquo;.</p></div>
+          </li>
+          <li class="reveal">
+            <span class="pledge__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            <div><h3>Never your screen&rsquo;s controls</h3><p>No remote-control sessions. You share your screen if you want to&nbsp;— your hands stay on the keyboard.</p></div>
+          </li>
+          <li class="reveal">
+            <span class="pledge__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            <div><h3>Never your funds</h3><p>You press every button in every session. We guide; we never transact on your behalf.</p></div>
+          </li>
+          <li class="reveal">
+            <span class="pledge__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            <div><h3>Never false hope</h3><p>On-chain transfers are usually final. Anyone promising guaranteed recovery is lying to you&nbsp;— we won&rsquo;t.</p></div>
+          </li>
+        </ul>
+        <p class="pledge__report">If anyone claiming to be us asks for any of these, it&rsquo;s a scam&nbsp;— report it to <a href="mailto:help@thecrypto.support">help@thecrypto.support</a>.</p>
+      </div>
     </section>
 
     <!-- ============ STATS ============ -->
     <section class="section" id="stats">
       <div class="stats">
         <div class="stat reveal">
-          <span class="stat__value grad" data-count="12000">0</span><span class="stat__plus grad">+</span>
-          <span class="stat__label">issues resolved</span>
-        </div>
-        <div class="stat reveal">
-          <span class="stat__value grad" data-count="15">0</span><span class="stat__plus grad">min</span>
-          <span class="stat__label">median response time</span>
-        </div>
-        <div class="stat reveal">
-          <span class="stat__value grad" data-count="98">0</span><span class="stat__plus grad">%</span>
-          <span class="stat__label">satisfaction rating</span>
-        </div>
-        <div class="stat reveal">
-          <span class="stat__value grad" data-count="24">0</span><span class="stat__plus grad">/7</span>
+          <span class="stat__value mono" data-count="24" aria-label="24/7 real-human coverage">24</span><span class="stat__suffix mono">/7</span>
           <span class="stat__label">real-human coverage</span>
         </div>
+        <div class="stat reveal">
+          <span class="stat__value mono" data-count="15" aria-label="15 minutes typical first reply">15</span><span class="stat__suffix mono">min</span>
+          <span class="stat__label">typical first reply</span>
+        </div>
+        <div class="stat reveal">
+          <span class="stat__value mono" data-count="100" aria-label="100 percent of sessions, you keep your keys">100</span><span class="stat__suffix mono">%</span>
+          <span class="stat__label">you keep your keys</span>
+        </div>
+        <div class="stat reveal">
+          <span class="stat__value mono" data-count="0" aria-label="zero seed-phrase requests, ever">0</span><span class="stat__suffix mono">&times;</span>
+          <span class="stat__label">seed-phrase requests, ever</span>
+        </div>
       </div>
+    </section>
+
+    <!-- ============ CASE NOTES ============ -->
+    <!-- Anonymized session-type summaries. Swap in real client quotes with
+         review-profile links once collected — never invent testimonials. -->
+    <section class="section" id="stories">
+      <div class="section__head reveal">
+        <p class="eyebrow mono" data-scramble>Case notes</p>
+        <h2>What getting unstuck looks like</h2>
+      </div>
+      <div class="quotes">
+        <figure class="quote reveal">
+          <figcaption><span>Wrong-network transfer</span><span class="mono">45-min screen-share</span></figcaption>
+          <blockquote>USDT sent over the wrong chain and presumed gone. We checked the destination chain together and the client recovered it themselves&nbsp;— their hands on their own keys the whole time.</blockquote>
+        </figure>
+        <figure class="quote reveal">
+          <figcaption><span>Cold-storage setup</span><span class="mono">60-min onboarding</span></figcaption>
+          <blockquote>A father-and-son pair moved their savings to a hardware wallet in one session&nbsp;— backups made, verified, and understood, in plain English throughout.</blockquote>
+        </figure>
+        <figure class="quote reveal">
+          <figcaption><span>2am phishing scare</span><span class="mono">15-min triage</span></figcaption>
+          <blockquote>A fake airdrop had approval to drain the wallet. We walked through revoking the approvals together within minutes of the first message.</blockquote>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ PRICING ============ -->
+    <section class="section" id="pricing">
+      <div class="section__head reveal">
+        <p class="eyebrow mono" data-scramble>Pricing</p>
+        <h2>Flat, quoted up front</h2>
+        <p class="section__sub">Free 10-minute triage first. We never charge a percentage of your funds&nbsp;— anyone who does is running the oldest scam in crypto.</p>
+      </div>
+      <div class="plans">
+        <article class="plan reveal">
+          <h3 class="mono">Quick fix</h3>
+          <p class="plan__price"><span class="plan__amount">$49</span><span class="plan__per mono">flat</span></p>
+          <ul>
+            <li>One issue, one live session</li>
+            <li>Email, Telegram, call or screen-share</li>
+            <li>Quoted before we start</li>
+          </ul>
+          <a href="#contact" class="btn btn--ghost btn--full" data-magnetic>Get unstuck</a>
+        </article>
+        <article class="plan plan--featured reveal">
+          <span class="plan__badge mono">Most popular</span>
+          <h3 class="mono">Guided onboarding</h3>
+          <p class="plan__price"><span class="plan__amount">$79</span><span class="plan__per mono">/ session</span></p>
+          <ul>
+            <li>60-minute private 1-on-1</li>
+            <li>Wallet setup to first transaction</li>
+            <li>Plain language, your pace</li>
+          </ul>
+          <a href="#contact" class="btn btn--primary btn--full" data-magnetic>Book a session</a>
+        </article>
+        <article class="plan reveal">
+          <h3 class="mono">Peace of mind</h3>
+          <p class="plan__price"><span class="plan__amount">$19</span><span class="plan__per mono">/ month</span></p>
+          <ul>
+            <li>Priority response line</li>
+            <li>Annual security checkup included</li>
+            <li>Sessions billed at plan rates</li>
+            <li>Cancel anytime</li>
+          </ul>
+          <a href="#contact" class="btn btn--ghost btn--full" data-magnetic>Stay covered</a>
+        </article>
+      </div>
+      <p class="plans__note reveal">If the free triage shows we can&rsquo;t actually help, you pay nothing&nbsp;— and we&rsquo;ll tell you straight away.<br>Paid by card after the session. We never ask you to send&nbsp;crypto.</p>
     </section>
 
     <!-- ============ FAQ ============ -->
     <section class="section section--narrow" id="faq">
       <div class="section__head reveal">
-        <p class="section__eyebrow">FAQ</p>
-        <h2>Questions, <span class="grad">answered</span></h2>
+        <p class="eyebrow mono" data-scramble>FAQ</p>
+        <h2>Questions, answered</h2>
       </div>
-      <details class="faq reveal">
+      <details class="faq reveal" name="faq">
         <summary>Do you ever need my seed phrase or private keys?</summary>
-        <p>No — never, under any circumstances. We guide you while you stay in control. Treat any request for your seed phrase, from anyone, as a scam.</p>
+        <p>No&nbsp;— never, under any circumstances. We guide you while you stay in control. Treat any request for your seed phrase, from anyone, as a scam.</p>
       </details>
-      <details class="faq reveal">
+      <details class="faq reveal" name="faq">
         <summary>Can you recover funds I lost to a scam?</summary>
-        <p>We're honest about this: on-chain transfers are usually irreversible, and anyone guaranteeing recovery is misleading you. What we can do is help you secure what's left, document everything, and report to the right channels.</p>
+        <p>We&rsquo;re honest about this: on-chain transfers are usually irreversible, and anyone guaranteeing recovery is misleading you. What we can do is help you secure what&rsquo;s left, document everything, and report to the right channels.</p>
       </details>
-      <details class="faq reveal">
+      <details class="faq reveal" name="faq">
+        <summary>How much does it cost?</summary>
+        <p>Flat prices, quoted up front before we start&nbsp;— see <a href="#pricing">pricing</a>. The first 10 minutes are a free triage so we can confirm we can actually help. We never take a percentage of your funds.</p>
+      </details>
+      <details class="faq reveal" name="faq">
+        <summary>How do I pay?</summary>
+        <p>By card, after the session, against a price you agreed to up front. We never ask you to send cryptocurrency as payment, and we never take a percentage of your funds.</p>
+      </details>
+      <details class="faq reveal" name="faq">
         <summary>Which wallets and exchanges do you cover?</summary>
-        <p>All the major hardware and software wallets, and every large exchange. If you're on something niche, ask — odds are we've seen it.</p>
+        <p>All the major hardware and software wallets, and every large exchange. If you&rsquo;re on something niche, ask&nbsp;— odds are we&rsquo;ve seen it.</p>
       </details>
-      <details class="faq reveal">
+      <details class="faq reveal" name="faq">
         <summary>How do sessions happen?</summary>
-        <p>Chat, voice or screen-share video — your choice. You'll never be asked to hand over remote control of your device.</p>
+        <p>Email, Telegram, phone or screen-share video&nbsp;— your choice. You&rsquo;ll never be asked to hand over remote control of your device.</p>
       </details>
     </section>
 
-    <!-- ============ CTA ============ -->
-    <section class="section section--cta" id="contact">
-      <div class="cta reveal">
-        <h2>Stuck right now?<br><span class="grad">Let's get you unstuck.</span></h2>
-        <p>Reach out and a specialist will be with you shortly.</p>
-        <a class="btn btn--primary btn--big" href="mailto:help@thecrypto.support">help@thecrypto.support</a>
+    <!-- ============ CONTACT ============ -->
+    <section class="section" id="contact">
+      <div class="contact reveal">
+        <div class="contact__copy">
+          <p class="eyebrow mono" data-scramble>Get help</p>
+          <h2>Stuck right now? <span class="accent">Let&rsquo;s fix it.</span></h2>
+          <p>Tell us what&rsquo;s going on and a specialist will get back to you&nbsp;— typically within 15 minutes.</p>
+          <div class="contact__alt">
+            <span class="mono">or email us directly</span>
+            <button class="contact__email mono" id="copyEmail" type="button" aria-label="Copy help@thecrypto.support to clipboard">
+              help@thecrypto.support
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            </button>
+          </div>
+        </div>
+        <form class="contact__form" id="helpForm">
+          <label>
+            <span class="mono">What&rsquo;s the issue?</span>
+            <textarea name="issue" rows="3" required placeholder="e.g. My transaction has been pending for 6 hours…"></textarea>
+          </label>
+          <label>
+            <span class="mono">Wallet or exchange</span>
+            <input name="platform" type="text" placeholder="e.g. Ledger, MetaMask, Kraken…">
+          </label>
+          <label>
+            <span class="mono">How should we reach you?</span>
+            <select name="channel">
+              <option value="Email">Email</option>
+              <option value="Telegram">Telegram</option>
+              <option value="Phone call">Phone call</option>
+            </select>
+          </label>
+          <label id="handleField" hidden>
+            <span class="mono">Your Telegram handle</span>
+            <input name="handle" type="text" placeholder="@yourhandle">
+          </label>
+          <button type="submit" class="btn btn--primary btn--full" data-magnetic>Send it over</button>
+          <p class="contact__note">Opens a pre-filled email&nbsp;— nothing is sent until you hit send. We&rsquo;ll never ask for your seed phrase.</p>
+          <div class="contact__fallback" id="contactFallback" hidden>
+            <p class="mono">Email app didn&rsquo;t open? Copy your message:</p>
+            <textarea readonly id="fallbackText" rows="6" aria-label="Your composed message"></textarea>
+            <button type="button" class="btn btn--ghost btn--full" id="copyMessage">Copy message + address</button>
+          </div>
+        </form>
       </div>
     </section>
 
   </main>
 
+  <!-- ============ FOOTER ============ -->
   <footer class="footer">
-    <span>© 2026 thecrypto.support</span>
-    <span class="footer__sep">·</span>
-    <span>We never ask for your keys. Not financial advice.</span>
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <a class="nav__logo" href="#top" aria-label="thecrypto.support — home">
+          <svg class="nav__mark" width="26" height="26" viewBox="0 0 32 32" fill="none" stroke="url(#markGrad2)" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true">
+            <defs>
+              <linearGradient id="markGrad2" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#29e0ff"/><stop offset="1" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+            <path d="M16 2.5 28 11.5 16 29.5 4 11.5Z"/><path d="M4 11.5h24M16 2.5l-5.5 9L16 29.5l5.5-18-5.5-9"/>
+          </svg>
+          <span>thecrypto<b>.support</b></span>
+        </a>
+        <p>Independent, non-custodial crypto help. Real humans, around the clock.</p>
+      </div>
+      <div>
+        <h4 class="mono">Support</h4>
+        <ul>
+          <li><a href="mailto:help@thecrypto.support">help@thecrypto.support</a></li>
+          <li>Typical first reply: 15 min</li>
+          <li>Coverage: 24/7</li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="mono">Company</h4>
+        <ul>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="terms.html">Terms of Service</a></li>
+          <li><a href="privacy.html">Privacy Policy</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="mono">Verify it&rsquo;s us</h4>
+        <ul>
+          <li>We only contact you from <span class="mono">@thecrypto.support</span></li>
+          <li>We never ask for your seed phrase, keys or 2FA codes</li>
+          <li>We never request remote control of your device</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__base">
+      <span>© 2026 thecrypto.support</span>
+      <span>Independent service&nbsp;— not affiliated with any exchange or wallet vendor. Not financial advice.</span>
+    </div>
   </footer>
 
   <script type="module" src="js/main.js"></script>

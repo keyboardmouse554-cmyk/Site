@@ -16,6 +16,12 @@ import { MeshSurfaceSampler } from "three/addons/math/MeshSurfaceSampler.js";
 // signals "module booted" so the CSS dead-man switch stands down
 document.documentElement.classList.add("booted");
 
+// low-power heuristic: few cores or a phone → lighter scene from the start
+const LOW_POWER =
+  (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+  /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+const MAX_DPR = LOW_POWER ? 1.25 : 1.5;
+
 const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const reduceMotion = () => motionQuery.matches;
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -37,7 +43,7 @@ function init3D() {
     alpha: true,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_DPR));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
@@ -74,21 +80,18 @@ function init3D() {
   const gem = new THREE.Mesh(
     new THREE.IcosahedronGeometry(1.55, 1),
     new THREE.MeshPhysicalMaterial({
-      color: 0x16264f,
-      metalness: 0.1,
-      roughness: 0.25,
-      transmission: 0.85,
-      thickness: 2.4,
-      ior: 1.5,
+      color: 0x1a2c58,
+      metalness: 0.15,
+      roughness: 0.22,
       clearcoat: 0.5,
       clearcoatRoughness: 0.35,
       iridescence: 1.0,
       iridescenceIOR: 1.3,
       iridescenceThicknessRange: [100, 400],
-      attenuationColor: new THREE.Color(0x29e0ff),
-      attenuationDistance: 2.2,
-      emissive: 0x0a1e3f,
-      emissiveIntensity: 0.55,
+      transparent: true,
+      opacity: 0.96,
+      emissive: 0x0c2148,
+      emissiveIntensity: 0.6,
       envMapIntensity: 1.15,
       flatShading: true,
     })
@@ -243,7 +246,7 @@ function init3D() {
      One draw call; all morph math lives in the vertex shader.
      ============================================================ */
   const mobileScene = window.innerWidth <= 900;
-  const N = mobileScene ? 6000 : 12000;
+  const N = LOW_POWER ? 4500 : (mobileScene ? 6000 : 12000);
 
   function sampleSurface(geo, count, scale, offset, jitter) {
     const sampler = new MeshSurfaceSampler(
@@ -422,13 +425,13 @@ function init3D() {
     composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     const bloom = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight), 0.24, 0.7, 0.92
+      new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2), 0.24, 0.7, 0.92
     );
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
     useComposer = true;
   }
-  if (window.innerWidth >= 768 && !reduceMotion()) buildComposer();
+  if (window.innerWidth >= 768 && !LOW_POWER && !reduceMotion()) buildComposer();
 
   /* ---- eased interaction state ---- */
   const mouse = { x: 0, y: 0 };
@@ -492,7 +495,7 @@ function init3D() {
       lastH = window.innerHeight;
       camera.aspect = lastW / lastH;
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_DPR));
       renderer.setSize(lastW, lastH);
       pMat.uniforms.uPixelRatio.value = renderer.getPixelRatio();
       cloudMat.uniforms.uPixelRatio.value = renderer.getPixelRatio();
@@ -523,8 +526,8 @@ function init3D() {
   // FPS watchdog: if frames stay slow, drop bloom then resolution
   let slowFrames = 0;
   function watchdog(dt) {
-    if (dt > 0.024) slowFrames++; else slowFrames = Math.max(0, slowFrames - 2);
-    if (slowFrames > 90) {
+    if (dt > 0.022) slowFrames++; else slowFrames = Math.max(0, slowFrames - 2);
+    if (slowFrames > 45) {
       slowFrames = -600; // long cool-down before next demotion
       if (useComposer) useComposer = false;
       else {

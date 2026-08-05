@@ -246,7 +246,7 @@ function init3D() {
      One draw call; all morph math lives in the vertex shader.
      ============================================================ */
   const mobileScene = window.innerWidth <= 900;
-  const N = LOW_POWER ? 4500 : (mobileScene ? 6000 : 12000);
+  const N = LOW_POWER ? 3000 : (mobileScene ? 4000 : 7000);
 
   function sampleSurface(geo, count, scale, offset, jitter) {
     const sampler = new MeshSurfaceSampler(
@@ -264,17 +264,18 @@ function init3D() {
     return arr;
   }
 
-  // chapter 0: spiral galaxy facing the camera
-  const galaxy = new Float32Array(N * 3);
+  // resting state: loose, quiet dust — "crypto is complicated"
+  const scatter = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
-    const r = 4.5 + Math.pow(Math.random(), 0.65) * 15;
-    const arm = Math.random() * Math.PI * 2 + r * 0.32;
-    galaxy[i * 3] = Math.cos(arm) * r;
-    galaxy[i * 3 + 1] = Math.sin(arm) * r * 0.48;
-    galaxy[i * 3 + 2] = (Math.random() - 0.5) * 7 - 2.5;
+    const r = 6 + Math.random() * 20;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    scatter[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    scatter[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.55;
+    scatter[i * 3 + 2] = r * Math.cos(phi) - 7;
   }
 
-  // shield outline for chapter 2
+  // formed state: the shield — assembles as the safety pledge appears
   const shieldShape = new THREE.Shape();
   shieldShape.moveTo(0, 1.35);
   shieldShape.quadraticCurveTo(1.25, 1.2, 1.25, 0.45);
@@ -282,19 +283,11 @@ function init3D() {
   shieldShape.quadraticCurveTo(-1.25, -0.75, -1.25, 0.45);
   shieldShape.quadraticCurveTo(-1.25, 1.2, 0, 1.35);
 
-  const gutterR = mobileScene ? [0, 0.3, -2.5] : [4.3, 0.2, -2.2];
   const gutterL = mobileScene ? [0, 0.3, -2.5] : [-4.3, 0.2, -2.2];
-  const shapeScale = mobileScene ? 1.0 : 1.35;
-  const knotPos = sampleSurface(
-    new THREE.TorusKnotGeometry(1.5, 0.42, 200, 24), N, shapeScale, gutterR, 0.12
-  );
   const shieldPos = sampleSurface(
     new THREE.ExtrudeGeometry(shieldShape, { depth: 0.35, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06 }),
-    N, shapeScale * 1.45, gutterL, 0.1
+    N, (mobileScene ? 1.0 : 1.35) * 1.45, gutterL, 0.1
   );
-  const diamondGeo = new THREE.OctahedronGeometry(1.9, 0);
-  diamondGeo.scale(1, 1.35, 1);
-  const diamondPos = sampleSurface(diamondGeo, N, shapeScale, gutterR, 0.08);
 
   const cRand = new Float32Array(N);
   const cSize = new Float32Array(N);
@@ -307,10 +300,8 @@ function init3D() {
   }
 
   const cloudGeo = new THREE.BufferGeometry();
-  cloudGeo.setAttribute("position", new THREE.BufferAttribute(galaxy, 3));
-  cloudGeo.setAttribute("aB", new THREE.BufferAttribute(knotPos, 3));
-  cloudGeo.setAttribute("aC", new THREE.BufferAttribute(shieldPos, 3));
-  cloudGeo.setAttribute("aD", new THREE.BufferAttribute(diamondPos, 3));
+  cloudGeo.setAttribute("position", new THREE.BufferAttribute(scatter, 3));
+  cloudGeo.setAttribute("aB", new THREE.BufferAttribute(shieldPos, 3));
   cloudGeo.setAttribute("aRand", new THREE.BufferAttribute(cRand, 1));
   cloudGeo.setAttribute("aSize", new THREE.BufferAttribute(cSize, 1));
   cloudGeo.setAttribute("aColor", new THREE.BufferAttribute(cCol, 3));
@@ -320,53 +311,33 @@ function init3D() {
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     uniforms: {
-      uChapter: { value: 0 },
+      uForm: { value: 0 },
       uTime: { value: 0 },
       uPixelRatio: { value: renderer.getPixelRatio() },
       uMouse: { value: new THREE.Vector2(999, 999) },
-      uSpin: { value: 0 },
       uTint: { value: new THREE.Color(0x29e0ff) },
       uTintAmt: { value: 0.25 },
-      uOpacity: { value: 0.55 },
+      uOpacity: { value: 0.4 },
     },
     vertexShader: /* glsl */ `
       attribute vec3 aB;
-      attribute vec3 aC;
-      attribute vec3 aD;
       attribute float aRand;
       attribute float aSize;
       attribute vec3 aColor;
-      uniform float uChapter;
+      uniform float uForm;
       uniform float uTime;
       uniform float uPixelRatio;
       uniform vec2 uMouse;
-      uniform float uSpin;
       varying vec3 vColor;
       varying float vGlow;
 
-      vec3 target(int i) {
-        if (i <= 0) {
-          float cs = cos(uSpin), sn = sin(uSpin);
-          return vec3(position.x * cs - position.y * sn,
-                      position.x * sn + position.y * cs, position.z);
-        }
-        if (i == 1) return aB;
-        if (i == 2) return aC;
-        return aD;
-      }
-
       void main() {
         vColor = aColor;
-        // per-particle stagger inside each transition: journeys start at
-        // different times but everyone has arrived by the segment's end,
-        // so shapes stream while forming yet always resolve crisply
-        float i0 = floor(min(uChapter, 2.999));
-        float f = uChapter - i0;
-        float fs = clamp((f - aRand * 0.45) / 0.55, 0.0, 1.0);
+        // staggered journeys: dust gathers into the shield as the
+        // pledge scrolls in, and every particle has arrived by uForm=1
+        float fs = clamp((uForm - aRand * 0.45) / 0.55, 0.0, 1.0);
         fs = fs * fs * (3.0 - 2.0 * fs);
-        vec3 p0 = target(int(i0));
-        vec3 p1 = target(int(i0) + 1);
-        vec3 p = mix(p0, p1, fs);
+        vec3 p = mix(position, aB, fs);
         // arc outward mid-flight so morphs read as flocking, not lerping
         vGlow = sin(fs * 3.14159);
         p += normalize(p + vec3(0.0001, 0.0002, 0.0003)) * vGlow * (0.3 + aRand * 0.5);
@@ -403,20 +374,14 @@ function init3D() {
   const cloud = new THREE.Points(cloudGeo, cloudMat);
   scene.add(cloud);
 
-  // scroll → chapter mapping with hold zones between morphs
-  const MORPH_SEGS = [[0.08, 0.24], [0.36, 0.50], [0.56, 0.70]];
-  const CHAPTER_TINT = [
-    new THREE.Color(0x29e0ff), new THREE.Color(0x62b0ff),
-    new THREE.Color(0x29e0ff), new THREE.Color(0x8b5cf6),
-  ];
-  const CHAPTER_OPACITY = [0.55, 0.7, 0.78, 0.7];
-  function chapterOf(s) {
-    let c = 0;
-    for (const [a, b] of MORPH_SEGS) c += THREE.MathUtils.smoothstep(s, a, b);
-    return c;
+  // the shield forms as the pledge scrolls in, holds through the
+  // stats, then dissolves back to quiet dust
+  function formOf(s) {
+    return THREE.MathUtils.smoothstep(s, 0.32, 0.48) *
+           (1 - THREE.MathUtils.smoothstep(s, 0.6, 0.74));
   }
-  let galaxySpin = 0;
   let gemScale = 1;
+  let cloudDrift = 0;
 
   /* ---- post-processing: bloom (desktop, with FPS watchdog) ---- */
   let composer = null;
@@ -544,10 +509,10 @@ function init3D() {
     world.position.x = worldXTarget;
     fadeIn = 1;
     camZBase = 9;
-    const ci = Math.min(3, Math.round(chapterOf(scrollSmooth)));
-    cloudMat.uniforms.uTint.value.copy(CHAPTER_TINT[ci]);
-    cloudMat.uniforms.uOpacity.value = CHAPTER_OPACITY[ci];
-    gemScale = chapterOf(scrollSmooth) > 0.6 ? 0.45 : 1;
+    const f = formOf(scrollSmooth);
+    cloudMat.uniforms.uForm.value = f;
+    cloudMat.uniforms.uOpacity.value = 0.4 + f * 0.45;
+    gemScale = f > 0.5 ? 0.45 : 1;
     renderFrame(0.016);
   }
 
@@ -560,24 +525,20 @@ function init3D() {
     core.rotation.x = Math.sin(t * 0.2) * 0.22;
     const pulse = 1 + Math.sin(t * 1.3) * 0.02;
 
-    // morph cloud: chapter from scroll, galaxy spin fades as shapes form
-    const chapter = chapterOf(scrollSmooth);
-    cloudMat.uniforms.uChapter.value = chapter;
+    // dust gathers into the shield at the pledge, then lets go
+    const form = formOf(scrollSmooth);
+    cloudMat.uniforms.uForm.value = form;
     cloudMat.uniforms.uTime.value = t;
-    const ci = Math.min(3, Math.round(chapter));
-    cloudMat.uniforms.uTint.value.lerp(CHAPTER_TINT[ci], k);
     cloudMat.uniforms.uOpacity.value +=
-      (CHAPTER_OPACITY[ci] - cloudMat.uniforms.uOpacity.value) * k;
-    galaxySpin += dt * 0.05 * Math.max(0, 1 - chapter);
-    cloudMat.uniforms.uSpin.value = galaxySpin;
+      ((0.4 + form * 0.45) - cloudMat.uniforms.uOpacity.value) * k;
     // cursor in world space at the cloud's depth
     const halfH = Math.tan(0.48) * camera.position.z;
     cloudMat.uniforms.uMouse.value.set(
       mouse.x * halfH * camera.aspect + camera.position.x,
       -mouse.y * halfH + camera.position.y
     );
-    // the gem hands the stage to the cloud once shapes start forming
-    const gemTarget = chapter > 0.6 ? 0.45 : 1;
+    // the gem yields the stage while the shield holds it
+    const gemTarget = form > 0.5 ? 0.45 : 1;
     gemScale += (gemTarget - gemScale) * k * 0.7;
     core.scale.setScalar(pulse * gemScale);
 
@@ -594,6 +555,8 @@ function init3D() {
     }
 
     particles.rotation.y = t * 0.014;
+    cloudDrift += dt * 0.01 * (1 - cloudMat.uniforms.uForm.value);
+    cloud.rotation.y = cloudDrift;
 
     scrollSmooth += (scrollTarget - scrollSmooth) * k;
     world.rotation.y = scrollSmooth * Math.PI * 1.5;

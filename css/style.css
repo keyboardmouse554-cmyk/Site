@@ -303,7 +303,13 @@ main, .nav, .footer { position: relative; z-index: 2; }
 }
 
 /* ---------- marquee ---------- */
-.marquee-wrap { padding: 1.5rem 0 0; }
+.marquee-wrap { padding: 1.5rem 0 0; position: relative; z-index: 1; }
+/* scrim so the band stays readable when the 3D scene drifts behind it */
+.marquee-wrap::before {
+  content: ""; position: absolute; inset: -2rem 0; z-index: -1;
+  background: linear-gradient(180deg, transparent, rgba(5, 7, 15, 0.88) 28%, rgba(5, 7, 15, 0.88) 72%, transparent);
+  pointer-events: none;
+}
 .marquee {
   display: flex; overflow: hidden; user-select: none; gap: 3.5rem;
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);

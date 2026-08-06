@@ -1,7 +1,8 @@
 /* ============================================================
    thecrypto.support — WebGL scene + page interactions
-   Scene: iridescent gem core, orbiting textured coins, shader
-   particle field, PMREM environment, ACES tone mapping, bloom.
+   Scene: iridescent gem core, orbiting textured coins, and a
+   particle field that gathers into a shield at the safety
+   pledge. PMREM environment, ACES tone mapping, bloom.
    All motion runs through eased targets — nothing snaps.
    ============================================================ */
 
@@ -238,31 +239,15 @@ function init3D() {
   scene.add(particles);
 
   /* ============================================================
-     MORPHING PARTICLE CLOUD — the scene's narrative centerpiece.
-     Thousands of particles stream between four shapes as you
-     scroll: galaxy (hero) → torus knot (services) → shield
-     (safety pledge) → diamond (pricing). Particles arc outward
-     mid-flight, wobble at rest, and scatter away from the cursor.
-     One draw call; all morph math lives in the vertex shader.
+     PARTICLE FIELD — one meaningful moment. Quiet scattered dust
+     ("crypto is complicated") gathers into a shield beside the
+     safety-pledge headline, then dissolves before the stats so it
+     never sits on text. Edge-weighted sampling keeps the shield
+     silhouette crisp through the point-sprite glow. One draw
+     call; morph math lives in the vertex shader.
      ============================================================ */
   const mobileScene = window.innerWidth <= 900;
   const N = LOW_POWER ? 3000 : (mobileScene ? 4000 : 7000);
-
-  function sampleSurface(geo, count, scale, offset, jitter) {
-    const sampler = new MeshSurfaceSampler(
-      new THREE.Mesh(geo, new THREE.MeshBasicMaterial())
-    ).build();
-    const arr = new Float32Array(count * 3);
-    const v = new THREE.Vector3();
-    for (let i = 0; i < count; i++) {
-      sampler.sample(v);
-      arr[i * 3] = v.x * scale + offset[0] + (Math.random() - 0.5) * jitter;
-      arr[i * 3 + 1] = v.y * scale + offset[1] + (Math.random() - 0.5) * jitter;
-      arr[i * 3 + 2] = v.z * scale + offset[2] + (Math.random() - 0.5) * jitter;
-    }
-    geo.dispose();
-    return arr;
-  }
 
   // resting state: loose, quiet dust — "crypto is complicated"
   const scatter = new Float32Array(N * 3);
@@ -275,7 +260,9 @@ function init3D() {
     scatter[i * 3 + 2] = r * Math.cos(phi) - 7;
   }
 
-  // formed state: the shield — assembles as the safety pledge appears
+  // formed state: the shield, parked in the open space beside the
+  // pledge headline. Most particles land on the rim (outer + inner
+  // outline) so the silhouette reads; the rest thinly fill the face.
   const shieldShape = new THREE.Shape();
   shieldShape.moveTo(0, 1.35);
   shieldShape.quadraticCurveTo(1.25, 1.2, 1.25, 0.45);
@@ -283,11 +270,36 @@ function init3D() {
   shieldShape.quadraticCurveTo(-1.25, -0.75, -1.25, 0.45);
   shieldShape.quadraticCurveTo(-1.25, 1.2, 0, 1.35);
 
-  const gutterL = mobileScene ? [0, 0.3, -2.5] : [-4.3, 0.2, -2.2];
-  const shieldPos = sampleSurface(
-    new THREE.ExtrudeGeometry(shieldShape, { depth: 0.35, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06 }),
-    N, (mobileScene ? 1.0 : 1.35) * 1.45, gutterL, 0.1
-  );
+  const shieldScale = (mobileScene ? 1.05 : 1.35) * 1.45;
+  const shieldAt = mobileScene ? [0, 0.4, -3.2] : [3.4, 0.3, -2.0];
+  const shieldPos = new Float32Array(N * 3);
+  const cEdge = new Float32Array(N);
+  {
+    const rim = shieldShape.getSpacedPoints(320);
+    const sampler = new MeshSurfaceSampler(
+      new THREE.Mesh(new THREE.ShapeGeometry(shieldShape), new THREE.MeshBasicMaterial())
+    ).build();
+    const v = new THREE.Vector3();
+    for (let i = 0; i < N; i++) {
+      const roll = Math.random();
+      let x, y, z, edge;
+      if (roll < 0.44) { // outer rim — the silhouette
+        const p = rim[(Math.random() * rim.length) | 0];
+        x = p.x; y = p.y; z = (Math.random() - 0.5) * 0.2; edge = 1;
+      } else if (roll < 0.62) { // inner rim — reads as thickness
+        const p = rim[(Math.random() * rim.length) | 0];
+        x = p.x * 0.82; y = p.y * 0.82; z = (Math.random() - 0.5) * 0.2; edge = 1;
+      } else { // sparse face fill
+        sampler.sample(v);
+        x = v.x; y = v.y; z = (Math.random() - 0.5) * 0.3; edge = 0;
+      }
+      const j = edge ? 0.035 : 0.07;
+      shieldPos[i * 3] = x * shieldScale + shieldAt[0] + (Math.random() - 0.5) * j;
+      shieldPos[i * 3 + 1] = y * shieldScale + shieldAt[1] + (Math.random() - 0.5) * j;
+      shieldPos[i * 3 + 2] = z * shieldScale + shieldAt[2] + (Math.random() - 0.5) * j;
+      cEdge[i] = edge;
+    }
+  }
 
   const cRand = new Float32Array(N);
   const cSize = new Float32Array(N);
@@ -302,6 +314,7 @@ function init3D() {
   const cloudGeo = new THREE.BufferGeometry();
   cloudGeo.setAttribute("position", new THREE.BufferAttribute(scatter, 3));
   cloudGeo.setAttribute("aB", new THREE.BufferAttribute(shieldPos, 3));
+  cloudGeo.setAttribute("aEdge", new THREE.BufferAttribute(cEdge, 1));
   cloudGeo.setAttribute("aRand", new THREE.BufferAttribute(cRand, 1));
   cloudGeo.setAttribute("aSize", new THREE.BufferAttribute(cSize, 1));
   cloudGeo.setAttribute("aColor", new THREE.BufferAttribute(cCol, 3));
@@ -313,6 +326,7 @@ function init3D() {
     uniforms: {
       uForm: { value: 0 },
       uTime: { value: 0 },
+      uDrift: { value: 0 },
       uPixelRatio: { value: renderer.getPixelRatio() },
       uMouse: { value: new THREE.Vector2(999, 999) },
       uTint: { value: new THREE.Color(0x29e0ff) },
@@ -321,15 +335,18 @@ function init3D() {
     },
     vertexShader: /* glsl */ `
       attribute vec3 aB;
+      attribute float aEdge;
       attribute float aRand;
       attribute float aSize;
       attribute vec3 aColor;
       uniform float uForm;
       uniform float uTime;
+      uniform float uDrift;
       uniform float uPixelRatio;
       uniform vec2 uMouse;
       varying vec3 vColor;
       varying float vGlow;
+      varying float vForm;
 
       void main() {
         vColor = aColor;
@@ -337,48 +354,68 @@ function init3D() {
         // pledge scrolls in, and every particle has arrived by uForm=1
         float fs = clamp((uForm - aRand * 0.45) / 0.55, 0.0, 1.0);
         fs = fs * fs * (3.0 - 2.0 * fs);
-        vec3 p = mix(position, aB, fs);
+        vForm = fs;
+        // slow drift applies to the dust only — the baked shield
+        // must land exactly where it was aimed, never rotated
+        float cd = cos(uDrift), sd = sin(uDrift);
+        vec3 sp = vec3(
+          position.x * cd + position.z * sd,
+          position.y,
+          -position.x * sd + position.z * cd
+        );
+        vec3 p = mix(sp, aB, fs);
         // arc outward mid-flight so morphs read as flocking, not lerping
         vGlow = sin(fs * 3.14159);
         p += normalize(p + vec3(0.0001, 0.0002, 0.0003)) * vGlow * (0.3 + aRand * 0.5);
-        // idle breathing
-        p += (0.05 + 0.05 * aRand) * vec3(
+        // idle breathing — settles down once the shield is formed
+        p += (0.05 + 0.05 * aRand) * (1.0 - fs * 0.7) * vec3(
           sin(uTime * 0.7 + aRand * 43.0),
           cos(uTime * 0.9 + aRand * 71.0),
           sin(uTime * 0.8 + aRand * 97.0)
         );
-        // cursor repulsion
+        // cursor repulsion, damped while formed so the shield holds
         vec2 d = p.xy - uMouse;
         float dist = length(d);
-        float force = smoothstep(2.6, 0.0, dist);
+        float force = smoothstep(2.6, 0.0, dist) * (1.0 - fs * 0.7);
         p.xy += (d / max(dist, 0.001)) * force * 1.6;
 
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
-        gl_PointSize = aSize * uPixelRatio * (10.0 / -mv.z);
+        // formed particles tighten up — face fill more than the rim —
+        // so the silhouette isn't smeared by big soft sprites
+        float tighten = mix(1.0, mix(0.5, 0.85, aEdge), fs);
+        gl_PointSize = aSize * tighten * uPixelRatio * (10.0 / -mv.z);
         gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader: /* glsl */ `
       varying vec3 vColor;
       varying float vGlow;
+      varying float vForm;
       uniform vec3 uTint;
       uniform float uTintAmt;
       uniform float uOpacity;
       void main() {
         float d = distance(gl_PointCoord, vec2(0.5));
-        float a = smoothstep(0.5, 0.1, d);
-        vec3 col = mix(vColor, uTint, uTintAmt);
-        col += vGlow * 0.35; // particles brighten while traveling
+        // sprites harden as they form so the shield edge stays crisp
+        float a = smoothstep(0.5, mix(0.1, 0.34, vForm), d);
+        vec3 col = mix(vColor, uTint, uTintAmt + vForm * 0.5);
+        col += vGlow * 0.3; // particles brighten while traveling
         gl_FragColor = vec4(col, a * uOpacity);
       }`,
   });
   const cloud = new THREE.Points(cloudGeo, cloudMat);
   scene.add(cloud);
 
-  // the shield forms as the pledge scrolls in, holds through the
-  // stats, then dissolves back to quiet dust
+  // the shield completes while the pledge headline is on screen and
+  // is fully dissolved before the stats arrive — it never sits on text
   function formOf(s) {
-    return THREE.MathUtils.smoothstep(s, 0.32, 0.48) *
-           (1 - THREE.MathUtils.smoothstep(s, 0.6, 0.74));
+    return THREE.MathUtils.smoothstep(s, 0.28, 0.37) *
+           (1 - THREE.MathUtils.smoothstep(s, 0.42, 0.52));
+  }
+  // the gem bows out for the pledge → stats → case-notes stretch
+  // (its left-gutter parking spot there sits under full-width text)
+  function gemFadeOf(s) {
+    return THREE.MathUtils.smoothstep(s, 0.3, 0.38) *
+           (1 - THREE.MathUtils.smoothstep(s, 0.6, 0.72));
   }
   let gemScale = 1;
   let cloudDrift = 0;
@@ -511,8 +548,8 @@ function init3D() {
     camZBase = 9;
     const f = formOf(scrollSmooth);
     cloudMat.uniforms.uForm.value = f;
-    cloudMat.uniforms.uOpacity.value = 0.4 + f * 0.45;
-    gemScale = f > 0.5 ? 0.45 : 1;
+    cloudMat.uniforms.uOpacity.value = 0.4 + f * (mobileScene ? 0.25 : 0.45);
+    gemScale = 1 - gemFadeOf(scrollSmooth) * 0.97;
     renderFrame(0.016);
   }
 
@@ -530,15 +567,15 @@ function init3D() {
     cloudMat.uniforms.uForm.value = form;
     cloudMat.uniforms.uTime.value = t;
     cloudMat.uniforms.uOpacity.value +=
-      ((0.4 + form * 0.45) - cloudMat.uniforms.uOpacity.value) * k;
+      ((0.4 + form * (mobileScene ? 0.25 : 0.45)) - cloudMat.uniforms.uOpacity.value) * k;
     // cursor in world space at the cloud's depth
     const halfH = Math.tan(0.48) * camera.position.z;
     cloudMat.uniforms.uMouse.value.set(
       mouse.x * halfH * camera.aspect + camera.position.x,
       -mouse.y * halfH + camera.position.y
     );
-    // the gem yields the stage while the shield holds it
-    const gemTarget = form > 0.5 ? 0.45 : 1;
+    // the gem bows out while the shield (then full-width text) has the stage
+    const gemTarget = 1 - gemFadeOf(scrollSmooth) * 0.97;
     gemScale += (gemTarget - gemScale) * k * 0.7;
     core.scale.setScalar(pulse * gemScale);
 
@@ -555,8 +592,8 @@ function init3D() {
     }
 
     particles.rotation.y = t * 0.014;
-    cloudDrift += dt * 0.01 * (1 - cloudMat.uniforms.uForm.value);
-    cloud.rotation.y = cloudDrift;
+    cloudDrift += dt * 0.01 * (1 - form);
+    cloudMat.uniforms.uDrift.value = cloudDrift;
 
     scrollSmooth += (scrollTarget - scrollSmooth) * k;
     world.rotation.y = scrollSmooth * Math.PI * 1.5;
